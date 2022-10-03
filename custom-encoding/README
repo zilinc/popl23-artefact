@@ -1,0 +1,4 @@
+This example (Crude.cogent) is described in section 5.3 of the paper.
+The python script rep.py replaces the generated C structure, getters and setters
+with custom ones. The generated refinement proof (Generated_AllRefine.thy) still succeeds.
+

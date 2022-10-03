@@ -1,0 +1,20 @@
+{-
+struct can_id {
+	uint32_t id:29;
+	uint32_t exide:1;
+	uint32_t rtr:1;
+	uint32_t err:1;
+};
+-}
+
+type R = { id : U29, exide : Bool, rtr : Bool, err : Bool }
+     layout record { id : 29b, exide : 1b at 29b, rtr: 1b at 30b, err:1b at 31b}
+-- NOTE that the first bit is the least significant bit in a byte
+
+foo : R -> R
+foo r = if r.exide !r then
+          let v = truncate (upcast r.id .&. 0x0c) !r in
+          r {id = v}
+        else
+          let v = truncate (upcast r.id + 1) !r in
+          r {id = v}

@@ -1,0 +1,147 @@
+ -- in this file, I only mention the fields  used by the driver
+-- and ignore the volatile stuff
+
+ns_in_us : U64
+ns_in_us = 1000
+
+type Timestamp_timebase = < 
+      COGENT_TIMESTAMP_TIMEBASE_SYSTEM   
+    | COGENT_TIMESTAMP_TIMEBASE_1_US    
+    | COGENT_TIMESTAMP_TIMEBASE_10_US  
+    | COGENT_TIMESTAMP_TIMEBASE_100_US
+    | COGENT_TIMESTAMP_TIMEBASE_1_MS 
+    -- | DUMMY
+    >
+
+layout LTimestamp_timebase = variant (3b) {
+   COGENT_TIMESTAMP_TIMEBASE_SYSTEM(0) : 0b,
+   COGENT_TIMESTAMP_TIMEBASE_1_US  (1) : 0b,
+   COGENT_TIMESTAMP_TIMEBASE_10_US (2) : 0b,
+   COGENT_TIMESTAMP_TIMEBASE_100_US(3) : 0b,
+   COGENT_TIMESTAMP_TIMEBASE_1_MS  (4) : 0b
+ } at 8b
+
+type Timeout_timebase = 
+  <  COGENT_TIMEOUT_TIMEBASE_1_US 
+   | COGENT_TIMEOUT_TIMEBASE_10_US 
+   | COGENT_TIMEOUT_TIMEBASE_100_US 
+   | COGENT_TIMEOUT_TIMEBASE_1_MS 
+>
+
+layout LTimeout_timebase =
+    variant (2b) {
+     COGENT_TIMEOUT_TIMEBASE_1_US  (0) : 0b
+   , COGENT_TIMEOUT_TIMEBASE_10_US (1) : 0b
+   , COGENT_TIMEOUT_TIMEBASE_100_US(2) : 0b
+   , COGENT_TIMEOUT_TIMEBASE_1_MS  (3) : 0b }
+  
+
+
+type Meson_timer_reg = {
+   timer_a_en : Bool,
+   timer_a : U32,
+   timer_a_mode : Bool,
+   timer_a_input_clk : Timeout_timebase,
+   timer_e : U32,
+   timer_e_hi : U32,
+   timer_e_input_clk : Timestamp_timebase
+} layout record {
+     timer_a_mode : 1b at 11b,
+     timer_a_en : 1b at 15b,
+     timer_a_input_clk : LTimeout_timebase,
+     timer_e_input_clk : LTimestamp_timebase,
+     timer_a : 4B at 4B,
+     timer_e : 4B at 72B, -- 4*18,
+     timer_e_hi : 4B at 76B
+}
+
+-- on the C side, reset_timer_e only writes to timer_e, but
+-- the timer_e_hi register would then be updated as well
+-- by the device
+reset_timer_e : Meson_timer_reg -> Meson_timer_reg
+reset_timer_e r = 
+   r { timer_e = 0,
+-- The following line is not necessary because the 
+-- device automatically resets the higher register
+-- but for the purpose of verification it is useful
+-- to keep it
+       timer_e_hi = 0}
+
+type Meson_timer = { 
+  regs : Meson_timer_reg,
+  disable : Bool
+}
+
+
+-- assume given non-null pointers?
+meson_init_cogent : Meson_timer -> Meson_timer
+meson_init_cogent timer { regs } =
+    {- Original C code:
+       timer->regs->mux = TIMER_A_EN | (COGENT_TIMESTAMP_TIMEBASE_1_US << TIMER_E_INPUT_CLK) 
+       |          (COGENT_TIMEOUT_TIMEBASE_1_MS << TIMER_A_INPUT_CLK);
+       timer->regs->timer_e = 0;
+     -}
+    timer { regs = reset_timer_e ( 
+        regs { 
+            -- the original C driver enables the timer A
+            -- without providing an initial value, which
+            -- could lead to unexpected behaviour
+            -- timer_a_en = True
+               timer_a_input_clk = COGENT_TIMEOUT_TIMEBASE_1_MS
+             , timer_e_input_clk = COGENT_TIMESTAMP_TIMEBASE_1_US
+          })
+      }
+
+meson_get_time_cogent : Meson_timer ! -> U64
+meson_get_time_cogent timer =
+  let initial_high : U64 = upcast timer.regs.timer_e_hi in
+  let low : U64 = upcast timer.regs.timer_e in
+  let high : U64 = upcast timer.regs.timer_e_hi in
+  -- this is a trick to check that overflow did not happen
+  -- it does not make sense without the volatile annotation of course
+  -- or with the cogent semantics (so this trick is not formally "verified")
+  let low' : U64 = if high /= initial_high then upcast timer.regs.timer_e else low in
+  let ticks : U64 = (high << 32) .|. low' in
+  let time : U64 = ticks * ns_in_us in 
+   time
+
+{- 
+
+void meson_set_timeout(meson_timer_t *timer, uint16_t timeout, bool periodic)
+{
+    if (periodic) {
+        timer->regs->mux |= TIMER_A_MODE;
+    } else {
+        timer->regs->mux &= ~TIMER_A_MODE;
+    }
+
+    timer->regs->timer_a = timeout;
+
+    // actually timer->disable is rudendant with  timer->regs->mux & TIMER_A_EN, isn't it?
+    if (timer->disable) {
+        timer->regs->mux |= TIMER_A_EN;
+        timer->disable = false;
+    }
+}
+ -}
+-- for linearity reason, this returns the timer
+type TimeoutInput = (Meson_timer, U16, Bool)
+meson_set_timeout_cogent : TimeoutInput -> Meson_timer
+meson_set_timeout_cogent (timer { regs }, timeout, periodic) =
+   let regs' = regs { timer_a_mode = periodic, timer_a = upcast timeout } in       
+   if timer.disable ! timer then        
+       timer { regs = regs' { timer_a_en = True }, disable = False } 
+   else 
+       timer { regs = regs' } 
+
+
+{- void meson_stop_timer(meson_timer_t *timer)
+{
+    timer->regs->mux &= ~TIMER_A_EN;
+    timer->disable = true;
+}
+-}
+meson_stop_timer_cogent : Meson_timer -> Meson_timer
+meson_stop_timer_cogent timer { regs } =
+   timer { regs = regs { timer_a_en = False },
+           disable = True }
