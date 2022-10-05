@@ -1,0 +1,41 @@
+-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Sec 2.1: Cogent basics
+-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+type Bag = { count : U32, sum : U32 }
+addToBag : (U32, Bag) -> Bag
+addToBag (x, b {count = c, sum = s}) = b {count = c + 1 , sum = s + x}
+
+
+-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Sec 3.1: Dargent basics
+-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+type Example = {
+  struct : #{a : U32, b : Bool}, -- nested embedded record
+  ptr : {c : U8},  -- pointer to another record
+  sum : <A U16 | B U8>  -- variant type
+}
+
+layout ExampleLayout = record {
+  struct : record { a : 4B, b : 1b },
+  ptr : pointer at 8B,
+  sum : variant (1b)
+          { A(0) : 2B at 1B, B(1) : 1B at 1B } at 5B }
+
+layout Bitfield = record {x : 1b, y : 1b at 1b, z : 1b at 2b}
+-- Alternatively:
+-- layout Bitfield = record {x : 1b, y : 1b after x, z : 1b after y}
+
+layout FourBytes = 4B
+
+
+-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Sec 3.2: layout polymorphism
+-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+type Pair t = {fst : t, snd : t}
+layout LPair l = record {fst : l, snd : l at 4B}
+freePair : all (t, l :~ t). (Pair t) layout (LPair l) -> ()
+
+
