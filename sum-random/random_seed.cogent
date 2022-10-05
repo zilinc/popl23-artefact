@@ -3,10 +3,9 @@ type Seed = U64
 type SeedValue = #{seed: Seed, value:U64}
 rand_with_seed : Seed -> SeedValue
 
-main : Seed -> SeedValue
-main seed = 
-  let r { seed } = rand_with_seed seed in
-  let r2 { seed }  = rand_with_seed seed in
-   #{ seed = seed,
-      value = r.value + r2.value
-   }
+sum : Seed -> SeedValue
+sum seed = 
+  let r1 { seed } = rand_with_seed seed
+  and r2 { seed } = rand_with_seed seed
+   in #{ seed
+       , value = r1.value + r2.value }
