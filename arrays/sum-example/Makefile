@@ -52,4 +52,4 @@ all:
 	sed -i "/^(\* Put manual type relation definitions below.*/a \ \ type_rel_WordArray_u32_C_def" "Generated_CorresSetup.thy"
 
 clean:
-	rm -r $(ABSDIR) ROOT generated* BUILD_INFO main_pp* Generated*
+	rm -rf $(ABSDIR) ROOT generated* BUILD_INFO main_pp* Generated* umm_types.txt
