@@ -11,4 +11,4 @@ all:
 	      --funused-dargent-accessors
 
 clean:
-	rm generated/*
+	rm -f generated/*

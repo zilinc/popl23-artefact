@@ -17,4 +17,5 @@ all:
 
 clean:
 	rm -r -f $(BUILDDIR)
+	rm -f umm_types.txt
 

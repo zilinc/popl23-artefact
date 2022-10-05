@@ -58,3 +58,4 @@ clean:
 	rm -f $(ABSDIR)/*.h
 	rm -f $(NAME)
 	rm -f Generated*.thy generated.table generated.table.new ROOT BUILD_INFO
+	rm -f umm_types.txt
