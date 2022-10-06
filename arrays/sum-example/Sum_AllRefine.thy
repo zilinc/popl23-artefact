@@ -43,58 +43,6 @@ text
 lemmas add_corres = corres_add[simplified \<Xi>_def[symmetric] user_\<xi>_0']
 lemmas sum_arr_corres = corres_sum_arr[simplified \<Xi>_def[symmetric] user_\<xi>_1']
 
-text
-  "Currently the Cogent compiler does not correctly generate the correct @{term scorres}
-   theorems for Cogent functions that call abstract functions. The theorem that should be
-   generated would look like the following:"
-(*
-lemma sum_arr_scorres:
-  "\<lbrakk>\<And>i \<gamma> v ts. \<lbrakk>i < length \<gamma>; valRel \<xi>' (v::(32 word) WordArray) (\<gamma> ! i)\<rbrakk>
-    \<Longrightarrow> val.scorres (wordarray_length v) (App (AFun ''wordarray_length'' ts) (Var i)) \<gamma> \<xi>';
-    \<And>i \<gamma> v ts. \<lbrakk>i < length \<gamma>; valRel \<xi>' (v::((32 word) WordArray, 32 word, 32 word,
-      (32 word, 32 word, unit) ElemAO \<Rightarrow> 32 word, 32 word, unit) WordArrayMapNoBreakP) (\<gamma> ! i);
-      WordArrayMapNoBreakP.f\<^sub>f v = Generated_Shallow_Normal.add;
-      \<exists>fs. \<gamma> ! i = VRecord fs \<and> fs ! 3 = (VFunction Generated_Deep_Normal.add [])\<rbrakk>
-    \<Longrightarrow> val.scorres (wordarray_fold_no_break v) (App (AFun ''wordarray_fold_no_break'' ts) (Var i)) \<gamma> \<xi>';
-    valRel \<xi>' v v'\<rbrakk>
-  \<Longrightarrow> val.scorres (Generated_Shallow_Normal.sum_arr v) (specialise ts Generated_Deep_Normal.sum_arr) [v'] \<xi>'"
-  apply (unfold Generated_Shallow_Normal.sum_arr_def Generated_Deep_Normal.sum_arr_def)
-  apply (simp only: specialise.simps)
-  apply (clarsimp simp: val.scorres_def)
-  apply (erule v_sem_varE)+
-  apply clarsimp
-  apply (drule_tac x = 0 in meta_spec)
-  apply (rename_tac r len)
-  apply (drule_tac x = "[v', v']" in meta_spec)
-  apply (drule_tac x = v in meta_spec)
-  apply (drule_tac x = "[TPrim (Num U32)]" in meta_spec)
-  apply clarsimp
-  apply (erule_tac x = len in allE)
-  apply clarsimp
-  apply (drule_tac x = 0  in meta_spec)
-  apply (drule_tac x = "[VRecord [v', VPrim (LU32 0), VPrim (LU32 (wordarray_length v)), 
-      VFunction Generated_Deep_Normal.add [], VPrim (LU32 0), VUnit],
-    VUnit, VPrim (LU32 0), VFunction Generated_Deep_Normal.add [], VPrim (LU32 0),
-    VPrim (LU32 (wordarray_length v)), v', v']" in meta_spec)
-  apply (drule_tac x = "\<lparr>WordArrayMapNoBreakP.arr\<^sub>f = v, frm\<^sub>f = 0, to\<^sub>f = (wordarray_length v),
-    f\<^sub>f = Generated_Shallow_Normal.add, acc\<^sub>f = 0, obsv\<^sub>f = ()\<rparr>" in meta_spec)
-  apply (drule_tac x = "[TPrim (Num U32), TPrim (Num U32), TUnit]" in meta_spec)
-  apply clarsimp
-  apply (erule meta_impE)
-   apply (simp add: valRel_records)
-   apply clarsimp thm scorres_add
-   apply (cut_tac  \<xi> = \<xi>' and
-      v' = "VRecord [VPrim (LU32 (ElemAO.elem\<^sub>f x)), VPrim (LU32 (ElemAO.acc\<^sub>f x)), VUnit]"
-      in scorres_add[where ts = "[]", simplified val.scorres_def specialise.simps],
-      (simp add: valRel_records)?)
-   apply (rename_tac s)
-   apply (erule_tac x = s in allE)
-   apply clarsimp
-  apply (erule_tac x = r in allE)
-  apply (clarsimp simp: valRel_records)
-  done
-*)
-
 section "The Shallow to C Correspondence With Assumptions"
 
 text 
