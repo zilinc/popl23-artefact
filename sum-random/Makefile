@@ -21,4 +21,4 @@ all:
 		--cpp-args="-x c \$$CPPIN -o \$$CPPOUT -E -P $(CFLAGS) -I$(BUILD_DIR) -I$(COGENT_LIBGUM_DIR)" 
 
 clean:
-	rm -rf $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)/* umm_types.txt
